@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TokoPanel Pro - Pribadi</title>
+
+<style>
+:root{
+ --bg:#0f172a;
+ --panel:rgba(255,255,255,.08);
+ --border:rgba(255,255,255,.15);
+ --text:#e5e7eb;
+ --muted:#94a3b8;
+ --primary:#6366f1;
+ --radius:18px;
+ --blur:blur(18px);
+ --font:'Segoe UI',sans-serif;
+}
+
+[data-theme="light"]{
+ --bg:#f3f4f6;
+ --panel:#ffffff;
+ --border:#e5e7eb;
+ --text:#1f2937;
+ --muted:#6b7280;
+}
+
+*{box-sizing:border-box}
+body{
+ margin:0;
+ height:100vh;
+ background:var(--bg);
+ color:var(--text);
+ font-family:var(--font);
+ display:flex;
+ flex-direction:column;
+}
+
+/* NAV */
+nav{
+ padding:1rem 1.5rem;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ background:var(--panel);
+ backdrop-filter:var(--blur);
+ border-bottom:1px solid var(--border);
+}
+.brand{font-weight:800;color:var(--primary);font-size:1.2rem}
+.btn-nav{
+ padding:10px 16px;
+ border-radius:14px;
+ border:1px solid var(--border);
+ background:none;
+ color:var(--text);
+ cursor:pointer;
+ font-weight:700;
+}
+.primary{background:var(--primary);color:white;border:none}
+
+/* LAYOUT */
+.main{
+ flex:1;
+ display:grid;
+ grid-template-columns:320px 1fr;
+ overflow:hidden;
+}
+aside,main{
+ padding:1.5rem;
+ overflow:auto;
+}
+
+/* CARD */
+.card{
+ background:var(--panel);
+ backdrop-filter:var(--blur);
+ border:1px solid var(--border);
+ border-radius:var(--radius);
+ padding:1.2rem;
+ margin-bottom:1rem;
+ box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+.card h4{margin:0;color:var(--muted)}
+.card b{font-size:1.6rem}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:.8rem}
+td button{background:none;border:none;color:#f87171;font-size:1rem;cursor:pointer}
+tbody tr:hover {background-color: rgba(99, 102, 241, 0.1);}
+
+/* MODAL */
+.modal{
+ position:fixed;
+ inset:0;
+ display:none;
+ justify-content:center;
+ align-items:center;
+ background:rgba(0,0,0,.55);
+ backdrop-filter:blur(10px);
+ z-index:99;
+}
+.modal.show{display:flex}
+
+.panel{
+ width:92%;
+ max-width:420px;
+ background:var(--panel);
+ backdrop-filter:blur(20px);
+ border-radius:24px;
+ padding:1.5rem;
+ border:1px solid var(--border);
+ animation:pop .3s ease;
+}
+@keyframes pop{
+ from{transform:scale(.9);opacity:0}
+ to{transform:scale(1);opacity:1}
+}
+
+input,select{
+ width:100%;
+ padding:12px;
+ margin:6px 0 14px;
+ border-radius:14px;
+ border:1px solid var(--border);
+ background:rgba(0,0,0,.15);
+ color:var(--text);
+}
+input::placeholder{color:var(--muted)}
+
+.btn{
+ width:100%;
+ padding:12px;
+ border-radius:14px;
+ border:none;
+ font-weight:700;
+ cursor:pointer;
+}
+.btn-primary{background:var(--primary);color:white}
+.btn-ghost{
+ background:none;
+ border:1px solid var(--border);
+ color:var(--text);
+}
+
+.filter{
+ display:flex;
+ gap:10px;
+ flex-wrap:wrap;
+ margin-bottom:1rem;
+}
+
+@media(max-width:768px){
+ .main{grid-template-columns:1fr}
+}
+
+/* MODAL HISTORY */
+.modal-history .panel{
+ max-width: 600px !important;
+ max-height: 80vh !important;
+ overflow-y: auto !important;
+}
+
+/* TOMBOL HISTORY DI ASIDE */
+.card.history-card{
+ cursor:pointer;
+ user-select:none;
+}
+.card.history-card:hover{
+ background-color: rgba(99, 102, 241, 0.1);
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+ <div class="brand">🛒 🎀𝐓𝐎𝐊𝐎_𝐒𝐔𝐂𝐈🎀</div>
+ <div>
+  <button class="btn-nav primary" onclick="openInput()">+ Transaksi</button>
+  <button class="btn-nav" onclick="openSettings()">⚙️</button>
+ </div>
+</nav>
+
+<div class="main">
+<aside>
+ <div class="card"><h4>Omset</h4><b id="omset">Rp 0</b></div>
+ <div class="card"><h4>Modal</h4><b id="modal">Rp 0</b></div>
+ <div class="card"><h4>Laba</h4><b id="laba" style="color: lightgreen;">Rp 0</b></div>
+ <div class="card"><h4>Total Qty Terjual</h4><b id="totalQty">0</b></div>
+
+ <!-- Tombol History -->
+ <div class="card history-card" onclick="openHistoryModal()"><h4>HISTORY</h4></div>
+</aside>
+
+<main>
+ <div class="card">
+  <h3>Riwayat Transaksi Terbaru</h3>
+  <table>
+   <thead>
+    <tr>
+      <th>Tanggal & Jam (WIB)</th>
+      <th>Barang</th>
+      <th>Laba</th>
+      <th>% Laba</th>
+      <th></th>
+    </tr>
+   </thead>
+   <tbody id="list"></tbody>
+  </table>
+ </div>
+</main>
+</div>
+
+<!-- INPUT MODAL -->
+<div class="modal" id="inputModal">
+ <div class="panel">
+  <h3>➕ Input Transaksi</h3>
+  <form id="form">
+   <input id="name" placeholder="Nama Barang" required />
+   <input type="date" id="date" required />
+   <input id="buy" placeholder="Harga Beli" required />
+   <input id="sell" placeholder="Harga Jual" required />
+   <input type="number" id="qty" value="1" min="1" />
+   <button class="btn btn-primary">Simpan</button>
+   <button type="button" class="btn btn-ghost" onclick="closeInput()">Batal</button>
+  </form>
+ </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settingsModal">
+ <div class="panel">
+  <h3>⚙️ Pengaturan</h3>
+
+  <label>Tema</label>
+  <select id="theme">
+   <option value="dark">Dark</option>
+   <option value="light">Light</option>
+  </select>
+
+  <label>Font</label>
+  <select id="font">
+   <option value="'Segoe UI',sans-serif">Segoe UI</option>
+   <option value="Arial,sans-serif">Arial</option>
+   <option value="'Courier New',monospace">Courier</option>
+   <option value="'Times New Roman',serif">Times</option>
+  </select>
+
+  <label>Warna Aksen</label>
+  <input type="color" id="accent" />
+
+  <label>Warna Teks</label>
+  <input type="color" id="textColor" />
+
+  <button class="btn btn-primary" onclick="saveSettings()">Simpan</button>
+  <button class="btn btn-ghost" onclick="closeSettings()">Tutup</button>
+ </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal modal-history" id="historyModal">
+ <div class="panel">
+  <h3>📜 History Transaksi</h3>
+  <div class="filter" style="margin-bottom:12px;">
+   <input type="date" id="histStart" />
+   <input type="date" id="histEnd" />
+   <button class="btn-nav primary" onclick="applyHistoryFilter()">Filter</button>
+   <button class="btn-nav" onclick="resetHistoryFilter()">Reset</button>
+   <button class="btn-nav" onclick="exportExcel()">📥 Export Excel</button>
+  </div>
+  <table>
+   <thead>
+    <tr>
+     <th>Tanggal</th>
+     <th>Barang</th>
+     <th>Qty</th>
+     <th>Laba</th>
+     <th></th>
+    </tr>
+   </thead>
+   <tbody id="historyList"></tbody>
+  </table>
+  <button class="btn btn-ghost" style="margin-top:12px;" onclick="closeHistory()">Tutup</button>
+ </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ===== DOM ===== */
+const inputModal = document.getElementById('inputModal');
+const settingsModal = document.getElementById('settingsModal');
+const historyModal = document.getElementById('historyModal');
+
+const form = document.getElementById('form');
+const list = document.getElementById('list');
+const historyList = document.getElementById('historyList');
+
+const name = document.getElementById('name');
+const date = document.getElementById('date');
+const buy = document.getElementById('buy');
+const sell = document.getElementById('sell');
+const qty = document.getElementById('qty');
+
+const histStart = document.getElementById('histStart');
+const histEnd = document.getElementById('histEnd');
+
+const start = document.getElementById('start');
+const end = document.getElementById('end');
+
+const theme = document.getElementById('theme');
+const font = document.getElementById('font');
+const accent = document.getElementById('accent');
+const textColor = document.getElementById('textColor');
+
+const omset = document.getElementById('omset');
+const modal = document.getElementById('modal');
+const laba = document.getElementById('laba');
+const totalQty = document.getElementById('totalQty');
+
+/* ===== SETTINGS ===== */
+const SET_KEY = 'tp_settings';
+let settings = JSON.parse(localStorage.getItem(SET_KEY)) || {
+ theme: 'dark',
+ font: "'Segoe UI',sans-serif",
+ accent: '#6366f1',
+ text: '#e5e7eb',
+};
+
+function applySettings() {
+ document.body.dataset.theme = settings.theme;
+ document.documentElement.style.setProperty('--primary', settings.accent);
+ document.documentElement.style.setProperty('--text', settings.text);
+ document.documentElement.style.setProperty('--font', settings.font);
+ theme.value = settings.theme;
+ font.value = settings.font;
+ accent.value = settings.accent;
+ textColor.value = settings.text;
+}
+
+function saveSettings() {
+ settings.theme = theme.value;
+ settings.font = font.value;
+ settings.accent = accent.value;
+ settings.text = textColor.value;
+ localStorage.setItem(SET_KEY, JSON.stringify(settings));
+ applySettings();
+ closeSettings();
+}
+
+/* ===== DATA ===== */
+const KEY = 'tp_tx';
+let data = JSON.parse(localStorage.getItem(KEY)) || [];
+let filtered = null;
+
+const rp = (n) =>
+ new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+ }).format(n);
+
+const num = (s) => Number(s.replace(/\D/g, ''));
+
+/* ===== RENDER MAIN ===== */
+function render() {
+ const src = filtered || data;
+ list.innerHTML = '';
+ let o = 0, m = 0, l = 0, qtySum = 0;
+
+ if (!src.length) {
+  list.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">Tidak ada data</td></tr>`;
+ }
+
+ src.sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).forEach(t=>{
+  const profit = (t.sell - t.buy) * t.qty;
+  const percent = t.buy>0 ? ((profit / (t.buy*t.qty))*100).toFixed(2) : 0;
+  o += t.sell * t.qty;
+  m += t.buy * t.qty;
+  l += profit;
+  qtySum += t.qty;
+
+  list.innerHTML += `
+   <tr>
+    <td>${t.timestamp}</td>
+    <td>${t.name || '-'}</td>
+    <td style="color:${profit>=0?'lightgreen':'#f87171'}">${rp(profit)}</td>
+    <td style="color:${profit>=0?'lightgreen':'#f87171'}">${percent}%</td>
+    <td><button onclick="del(${t.id}); render()">🗑️</button></td>
+   </tr>`;
+ });
+
+ omset.textContent = rp(o);
+ modal.textContent = rp(m);
+
+ laba.textContent = rp(l);
+ laba.style.color = l >= 0 ? 'lightgreen' : '#f87171';
+
+ totalQty.textContent = qtySum;
+}
+
+/* ===== RENDER HISTORY MODAL ===== */
+function renderHistoryList(src){
+  historyList.innerHTML = '';
+  if(!src.length){
+    historyList.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">Tidak ada data</td></tr>`;
+    return;
+  }
+  src.sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
+    const profit = (t.sell - t.buy)*t.qty;
+    historyList.innerHTML += `
+      <tr>
+       <td>${t.date}</td>
+       <td>${t.name}</td>
+       <td>${t.qty}</td>
+       <td style="color:${profit>=0?'lightgreen':'#f87171'}">${rp(profit)}</td>
+       <td><button onclick="del(${t.id}); renderHistoryList(src)">🗑️</button></td>
+      </tr>
+    `;
+  });
+}
+
+/* ===== FILTER HISTORY MODAL ===== */
+function applyHistoryFilter(){
+  if(!histStart.value || !histEnd.value){
+    alert('Pilih tanggal filter!');
+    return;
+  }
+  const filteredHistory = data.filter(t=> t.date>=histStart.value && t.date<=histEnd.value);
+  renderHistoryList(filteredHistory);
+}
+
+function resetHistoryFilter(){
+  histStart.value = '';
+  histEnd.value = '';
+  renderHistoryList(data);
+}
+
+/* ===== FORM SUBMIT ===== */
+form.onsubmit = e=>{
+ e.preventDefault();
+ const now = new Date();
+ now.setHours(now.getHours()+7);
+ const timestamp = now.toISOString().slice(0,10) + ' ' + now.toTimeString().slice(0,8);
+
+ const newData = {
+  id: Date.now(),
+  name: name.value.trim(),
+  date: date.value,
+  buy: num(buy.value),
+  sell: num(sell.value),
+  qty: +qty.value,
+  timestamp: timestamp
+ };
+ if(!newData.name){
+  alert('Nama barang tidak boleh kosong!');
+  return;
+ }
+ data.push(newData);
+ localStorage.setItem(KEY, JSON.stringify(data));
+ closeInput(); form.reset(); render();
+ if(historyModal.classList.contains('show')) renderHistoryList(data);
+};
+
+/* ===== DELETE ===== */
+function del(id){
+ if(confirm('Hapus transaksi?')){
+  data = data.filter(x=>x.id!==id);
+  localStorage.setItem(KEY, JSON.stringify(data));
+  render();
+  if(historyModal.classList.contains('show')) renderHistoryList(data);
+ }
+}
+
+/* ===== MODAL CONTROL ===== */
+function openInput(){
+ inputModal.classList.add('show');
+ date.valueAsDate = new Date();
+ name.focus();
+}
+function closeInput(){inputModal.classList.remove('show')}
+function openSettings(){settingsModal.classList.add('show')}
+function closeSettings(){settingsModal.classList.remove('show')}
+function openHistoryModal(){
+ historyModal.classList.add('show');
+ histStart.value = '';
+ histEnd.value = '';
+ renderHistoryList(data);
+}
+function closeHistory(){
+ historyModal.classList.remove('show');
+ render();
+}
+
+/* ===== EXPORT EXCEL ===== */
+function exportExcel(){
+ const src = (() => {
+  // kalau ada filter di modal history gunakan data yg sudah difilter (berdasarkan input tanggal)
+  const startDate = histStart.value;
+  const endDate = histEnd.value;
+  if(startDate && endDate){
+   return data.filter(t=> t.date>=startDate && t.date<=endDate);
+  }
+  return data;
+ })();
+ if(!src.length){
+  alert('Tidak ada data untuk di export');
+  return;
+ }
+
+ const excelData = src.map(t=>{
+  const profit = (t.sell - t.buy) * t.qty;
+  return {
+   Tanggal: t.date,
+   Barang: t.name,
+   Qty: t.qty,
+   Harga_Beli: t.buy,
+   Harga_Jual: t.sell,
+   Laba: profit
+  };
+ });
+
+ const ws = XLSX.utils.json_to_sheet(excelData);
+ const wb = XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb, ws, 'Transaksi');
+
+ const fileName =
+  histStart.value && histEnd.value
+   ? `Laporan_${histStart.value}_sampai_${histEnd.value}.xlsx`
+   : `Laporan_Semua_Data.xlsx`;
+
+ XLSX.writeFile(wb, fileName);
+}
+
+/* ===== INIT ===== */
+applySettings();
+render();
+</script>
+
+</body>
+</html>
